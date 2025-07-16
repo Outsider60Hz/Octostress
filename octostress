@@ -1,0 +1,126 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <title>OctoStress 🐙</title>
+  <style>
+    body {
+      margin: 0;
+      font-family: sans-serif;
+      background: #f0f0f0;
+      text-align: center;
+    }
+    canvas {
+      background: white;
+      border: 2px solid #333;
+      margin-top: 20px;
+    }
+    #controls {
+      margin-top: 10px;
+    }
+    button {
+      padding: 10px 20px;
+      margin: 5px;
+      font-size: 16px;
+      cursor: pointer;
+    }
+  </style>
+</head>
+<body>
+  <h1>OctoStress 🐙</h1>
+  <p>Presiona A, S, K o L para atender tareas. ¡No te estreses!</p>
+  <canvas id="gameCanvas" width="480" height="640"></canvas>
+  <div id="controls">
+    <button onclick="startGame()">▶️ Jugar</button>
+    <button onclick="toggleSound()">🔈/🔇 Sonido</button>
+  </div>
+
+  <script>
+    const canvas = document.getElementById("gameCanvas");
+    const ctx = canvas.getContext("2d");
+
+    let gameRunning = false;
+    let soundEnabled = true;
+    let stress = 0;
+    let tasks = [];
+
+    const taskKeys = ["A", "S", "K", "L"];
+    const taskNames = ["Emails", "Llamadas", "Firmas", "Café"];
+    const sounds = {
+      task: new Audio("https://assets.mixkit.co/sfx/preview/mixkit-game-click-1114.mp3"),
+      fail: new Audio("https://assets.mixkit.co/sfx/preview/mixkit-wrong-answer-fail-notification-946.mp3")
+    };
+
+    function playSound(name) {
+      if (soundEnabled) {
+        sounds[name].currentTime = 0;
+        sounds[name].play();
+      }
+    }
+
+    function toggleSound() {
+      soundEnabled = !soundEnabled;
+      alert("Sonido: " + (soundEnabled ? "Activado" : "Desactivado"));
+    }
+
+    function startGame() {
+      gameRunning = true;
+      stress = 0;
+      tasks = [];
+      spawnTask();
+      gameLoop();
+    }
+
+    function spawnTask() {
+      const i = Math.floor(Math.random() * taskKeys.length);
+      tasks.push({ key: taskKeys[i], name: taskNames[i], time: Date.now() });
+      if (gameRunning) setTimeout(spawnTask, 1000 + Math.random() * 1000);
+    }
+
+    function gameLoop() {
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+      ctx.fillStyle = "#e0e0e0";
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+      ctx.fillStyle = "#ff4444";
+      ctx.fillRect(20, 20, stress * 2, 20);
+      ctx.strokeStyle = "#000";
+      ctx.strokeRect(20, 20, 200, 20);
+      ctx.fillStyle = "#000";
+      ctx.fillText("Estrés", 230, 35);
+
+      ctx.font = "18px Arial";
+      tasks.forEach((task, i) => {
+        ctx.fillStyle = "#333";
+        ctx.fillText(`${task.name} [${task.key}]`, 50, 100 + i * 30);
+        if (Date.now() - task.time > 3000) {
+          stress++;
+          playSound("fail");
+          tasks.splice(i, 1);
+        }
+      });
+
+      if (stress >= 100) {
+        gameRunning = false;
+        ctx.fillStyle = "red";
+        ctx.font = "30px Arial";
+        ctx.fillText("¡Te despidieron!", 100, canvas.height / 2);
+        return;
+      }
+
+      requestAnimationFrame(gameLoop);
+    }
+
+    window.addEventListener("keydown", (e) => {
+      if (!gameRunning) return;
+      const key = e.key.toUpperCase();
+      const i = tasks.findIndex((t) => t.key === key);
+      if (i !== -1) {
+        tasks.splice(i, 1);
+        playSound("task");
+      }
+    });
+  </script>
+</body>
+</html>
